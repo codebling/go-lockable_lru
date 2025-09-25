@@ -63,7 +63,7 @@ func (llru *LLRU[K, V]) addUnlockedWithoutLockingNorCheckingCapacity(key K, valu
 }
 
 // Add adds an unlocked value to the cache. 
-// If the value exists, it is updated. If it was locked, it is unlocked.
+// If the value exists, it is updated. If it existed and was locked, it is unlocked.
 // Returns `false, nil` if there was no room, otherwise returns true and the evicted entry, if any
 func (llru *LLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool, evicted *Entry[K, V]) {
 	llru.lock.Lock()
