@@ -69,7 +69,7 @@ func (llru *LLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool, evicted *E
 	llru.lock.Lock()
 	defer llru.lock.Unlock()
 	
-	llru.locked.Remove(key)
+	llru.locked.Remove(key) //safe to do here, because we'll always have room if we remove a value
 
 	hasRoom := llru.locked.Count() < llru.size
 	if hasRoom {
