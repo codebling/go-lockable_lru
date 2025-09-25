@@ -73,6 +73,9 @@ func (llru *LLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool, evicted *E
 
 	hasRoom := llru.locked.Count() < llru.size
 	if hasRoom {
+		//in case we did remove from the locked values, resize the locked so we don't unnecessarily evict
+		llru.unlocked.Resize(llru.size - llru.locked.Count())
+		
 		evicted = llru.addUnlockedWithoutLockingNorCheckingCapacity()
 	}
 
