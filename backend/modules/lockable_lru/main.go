@@ -84,17 +84,23 @@ func (llru *LLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool, evicted *E
 }
 
 
-// Add adds an locked value to the cache. Returns true if an eviction occurred.
-func (llru *LLRU[K, V]) AddLocked(key K, value V) (evicted bool) {
-	return llru.unlocked.Add(key, value)
-}
+// Add adds a locked value to the cache. 
+// If the value exists, it is updated. If it existed and was unlocked, it is locked.
+// Returns `false, nil` if there was no room, otherwise returns true and the evicted entry, if any
+func (llru *LLRU[K, V]) AddOrUpdateLocked(key K, value V) (ok bool, evicted *Entry[K, V]) {
+	llru.lock.Lock()
+	defer llru.lock.Unlock()
+	
+	hasRoom := llru.locked.Count() < llru.size
+	if hasRoom {
+		llru.unlocked.Remove(key)
 
-// Get looks up a key's value from the cache.
-func (llru *LLRU[K, V]) Get(key K) (value V, ok bool) {
-	c.lock.Lock()
-	value, ok = c.lru.Get(key)
-	c.lock.Unlock()
-	return value, ok
+		
+		evicted = llru.addUnlockedWithoutLockingNorCheckingCapacity()
+	}
+
+	ok = hasRoom
+	return ok, evicted
 }
 
 // Contains checks if a key is in the cache, without updating the
