@@ -65,7 +65,8 @@ func (llru *ThreadunsafeLLRU[K, V]) addOrUpdateUnlockedWithoutLockingNorChecking
 }
 
 // Add adds an unlocked value to the cache. 
-// If the value exists, it is updated. If it existed and was locked, it is unlocked.
+// If the key exists, it is updated, making it the most recently used item. 
+// If the key exists and is locked, it is unlocked, making it the most recently used item.
 // Returns `false, nil` if there was no room, otherwise returns true and the evicted entry, if any
 func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool, evicted *Entry[K, V]) {
 	llru.locked.Remove(key) //safe to do here, we'll never remove a value and then not have room
@@ -84,7 +85,8 @@ func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool
 
 
 // Add adds a locked value to the cache. 
-// If the value exists, it is updated. If it existed and was unlocked, it is locked.
+// If the key exists, it is updated, making it the most recently used item. 
+// If the key exists and is unlocked, it is locked, making it the most recently used item.
 // Returns `false, nil` if there was no room, otherwise returns true and the evicted entry, if any
 func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateLocked(key K, value V) (ok bool, evicted *Entry[K, V]) {
 	hasRoom := llru.locked.Count() < llru.size
