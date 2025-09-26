@@ -86,8 +86,8 @@ func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool
 
 
 // Add adds a locked value to the cache. 
-// If the key exists and is locked, its value is updated, making it the most recently used item, and `true, nil` is returned.
-// If the key exists and is unlocked, its value is updated and it is locked, making it the most recently used item, and `true, nil` is returned.
+// If the key exists and is locked, its value is updated, and `true, nil` is returned.
+// If the key exists and is unlocked, its value is updated and it is locked, and `true, nil` is returned.
 // If the key does not exist and there is room, it is added, making it the most recently used item. If an entry was evicted, `true, entry` is returned, otherwise `true, nil` is returned.
 // If the key does not exist and there is no room, `false, nil` is returned.
 func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateLocked(key K, value V) (ok bool, evicted *Entry[K, V]) {
