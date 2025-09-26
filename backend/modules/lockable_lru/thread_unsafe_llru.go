@@ -129,5 +129,9 @@ func (llru *ThreadunsafeLLRU[K, V]) Lock(key K) (ok bool) {
 	}
 	llru.unlocked.Remove(key)
 	llru.locked.Set(key, value)
+
+	//resize unlocked
+	resize(llru.unlocked, llru.size - llru.locked.Count())
+
 	return true
 }
