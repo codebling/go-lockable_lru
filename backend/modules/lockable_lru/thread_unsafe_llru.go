@@ -120,7 +120,7 @@ func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateLocked(key K, value V) (ok bool, 
 // Locks an unlocked value in the cache. 
 // If the key exists and is unlocked, it is locked, making it the most recently used item, and `true` is returned
 // If the key exists and is locked, `true` is returned
-// Returns `false, nil` if the key did not exist, otherwise returns true
+// Returns `false` if the key was not in the cache
 func (llru *ThreadunsafeLLRU[K, V]) Lock(key K) (ok bool) {
 	value, exists := llru.unlocked.Get(key)
 	if !exists {
