@@ -133,3 +133,26 @@ func TestAddOrUpdateUnlockedCase1(t *testing.T) {
 	}
 }
 
+// If the key exists and is locked, its value is updated and it is unlocked, making it the most recently used item, and `true, nil` is returned.
+func TestAddOrUpdateUnlockedCase2(t *testing.T) {
+	llru := buildNewEmpty(t, 2)
+
+	_, _ = llru.AddOrUpdateLocked("new key1", "1")
+	_, _ = llru.AddOrUpdateUnlocked("new key2", "2")
+
+	ok, evicted := llru.AddOrUpdateUnlocked("new key1", "1")
+	if !ok || evicted != nil {
+		t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
+	}
+
+	//check that if we add another, "new key1" is not the entry that gets evicted (it was most recently used)
+	ok, evicted = llru.AddOrUpdateUnlocked("new key3", "3")
+	if !ok || evicted == nil || evicted.Key == "new key1" || evicted.Value == "1" {
+		t.Errorf("expected `true` and NOT `Entry{Key: \"new key1\", Value: \"1\"}` evicted but got %v, %v", ok, evicted)
+	}
+	//check that if we add another, "new key1" is the entry that gets evicted (it is oldest and it is unlocked)
+	ok, evicted = llru.AddOrUpdateUnlocked("new key4", "4")
+	if !ok || evicted == nil || evicted.Key != "new key1" || evicted.Value != "1" {
+		t.Errorf("expected `true` and `Entry{Key: \"new key1\", Value: \"1\"}` evicted but got %v, %v", ok, evicted)
+	}
+}
