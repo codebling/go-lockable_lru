@@ -4,11 +4,16 @@ import (
 	"testing"
 )
 
-func TestAddLockedToEmpty(t *testing.T) {
-	llru, err := NewUnsafe[string, string](10)
+func buildNewEmpty(t *testing.T, size int) *ThreadunsafeLLRU[string, string] {
+	llru, err := NewUnsafe[string, string](size)
 	if err != nil {
 		t.Fatalf("could not create llru: %v", err)
 	}
+	return llru
+}
+
+func TestAddLockedToEmpty(t *testing.T) {
+	llru := buildNewEmpty(t, 10)
 
 	ok, evicted := llru.AddOrUpdateLocked("x", "x")
 	if !ok || evicted != nil {
@@ -17,10 +22,8 @@ func TestAddLockedToEmpty(t *testing.T) {
 }
 
 func TestAddUnlockedToEmpty(t *testing.T) {
-	llru, err := NewUnsafe[string, string](10)
-	if err != nil {
-		t.Fatalf("could not create llru: %v", err)
-	}
+	llru := buildNewEmpty(t, 10)
+
 	ok, evicted := llru.AddOrUpdateUnlocked("x", "x")
 	if !ok || evicted != nil {
 		t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
