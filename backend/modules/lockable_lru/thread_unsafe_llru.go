@@ -9,8 +9,6 @@ package lockable_lru
  *
  */
 import (
-	"sync"
-
 	lru "github.com/hashicorp/golang-lru/v2"
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
@@ -19,7 +17,6 @@ type ThreadunsafeLLRU[K cmap.Stringer, V any] struct {
 	unlocked         *lru.Cache[K, V]							//unlocked k-v store whose values can be evicted when a new value is added
 	locked						 cmap.ConcurrentMap[K, V]   //locked k-v store, whose values can never be evicted
 	size int			                                //total size, combined locked and unlocked
-	lock        sync.RWMutex                      //even though the underlying structures are threadsafe, we need to lock if we have to do 2 or more operations - which means we have to lock for every operation, otherwise we could deadlock if one call has locked the outer lock but is waiting on the inner lock, and another call has not locked the outer but has locked the inner
 }
 
 type Entry[K cmap.Stringer, V any] struct {
@@ -66,9 +63,6 @@ func (llru *ThreadunsafeLLRU[K, V]) addOrUpdateUnlockedWithoutLockingNorChecking
 // If the value exists, it is updated. If it existed and was locked, it is unlocked.
 // Returns `false, nil` if there was no room, otherwise returns true and the evicted entry, if any
 func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool, evicted *Entry[K, V]) {
-	llru.lock.Lock()
-	defer llru.lock.Unlock()
-	
 	llru.locked.Remove(key) //safe to do here, we'll never remove a value and then not have room
 
 	hasRoom := llru.locked.Count() < llru.size
@@ -88,9 +82,6 @@ func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool
 // If the value exists, it is updated. If it existed and was unlocked, it is locked.
 // Returns `false, nil` if there was no room, otherwise returns true and the evicted entry, if any
 func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateLocked(key K, value V) (ok bool, evicted *Entry[K, V]) {
-	llru.lock.Lock()
-	defer llru.lock.Unlock()
-	
 	hasRoom := llru.locked.Count() < llru.size
 	if hasRoom {
 		llru.unlocked.Remove(key)
