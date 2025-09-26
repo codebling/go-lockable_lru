@@ -28,13 +28,13 @@ type Entry[K cmap.Stringer, V any] struct {
 }
 
 // New creates an LRU of the given size.
-func New[K cmap.Stringer, V any](size int) (*threadunsafeLLRU[K, V], error) {
-	return NewWithEvict[K, V](size, nil)
+func NewUnsafe[K cmap.Stringer, V any](size int) (*threadunsafeLLRU[K, V], error) {
+	return NewUnsafeWithEvict[K, V](size, nil)
 }
 
 // NewWithEvict constructs a fixed size cache with the given eviction
 // callback.
-func NewWithEvict[K cmap.Stringer, V any](size int, onEvicted func(key K, value V)) (*threadunsafeLLRU[K, V], error) {
+func NewUnsafeWithEvict[K cmap.Stringer, V any](size int, onEvicted func(key K, value V)) (*threadunsafeLLRU[K, V], error) {
 	lru, err := lru.NewWithEvict(size, onEvicted)
 	if err != nil {	
 		return nil, err
