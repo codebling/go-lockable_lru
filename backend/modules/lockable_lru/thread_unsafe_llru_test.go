@@ -12,6 +12,19 @@ func buildNewEmpty(t *testing.T, size int) *ThreadunsafeLLRU[string, string] {
 	return llru
 }
 
+func buildFullyLocked(t *testing.T, size int) *ThreadunsafeLLRU[string, string] {
+	llru := buildNewEmpty(t, size)
+
+	for i := range size {
+		ok, evicted := llru.AddOrUpdateLocked(string(rune(i)), "x")
+		if !ok || evicted != nil {
+			t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
+		}
+	}
+
+	return llru
+}
+
 func TestAddLockedToEmpty(t *testing.T) {
 	llru := buildNewEmpty(t, 10)
 
@@ -31,17 +44,7 @@ func TestAddUnlockedToEmpty(t *testing.T) {
 }
 
 func TestAddLockedToFullyLocked(t *testing.T) {
-	llru, err := NewUnsafe[string, string](5)
-	if err != nil {
-		t.Fatalf("could not create llru: %v", err)
-	}
-
-	for i := range 5 {
-		ok, evicted := llru.AddOrUpdateLocked(string(rune(i)), "x")
-		if !ok || evicted != nil {
-			t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
-		}
-	}
+	llru := buildFullyLocked(t, 5)
 
 	//cache now full, another add with new key should fail
 	ok, evicted := llru.AddOrUpdateLocked("new key", "x")
@@ -51,17 +54,7 @@ func TestAddLockedToFullyLocked(t *testing.T) {
 }
 
 func TestAddUnlockedToFullyLocked(t *testing.T) {
-	llru, err := NewUnsafe[string, string](5)
-	if err != nil {
-		t.Fatalf("could not create llru: %v", err)
-	}
-
-	for i := range 5 {
-		ok, evicted := llru.AddOrUpdateLocked(string(rune(i)), "x")
-		if !ok || evicted != nil {
-			t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
-		}
-	}
+	llru := buildFullyLocked(t, 5)
 
 	//cache now full, another add with new key should fail
 	ok, evicted := llru.AddOrUpdateUnlocked("new key", "x")
