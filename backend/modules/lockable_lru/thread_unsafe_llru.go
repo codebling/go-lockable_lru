@@ -64,6 +64,18 @@ func (llru *ThreadunsafeLLRU[K, V]) addOrUpdateUnlockedWithoutLockingNorChecking
 	}
 }
 
+//modifies the passed LRU to change its size. If one item was evicted, it is returned. If more than one is evicted, the oldest is returned
+func resize[K cmap.Stringer, V any](lru *lru.Cache[K, V], size int) (*Entry[K, V]) {
+	oldestKey, oldestValue, _ := lru.GetOldest() //we can ignore the last parameter, which is false if the lru is empty
+	numberEvicted := lru.Resize(size)
+
+	if numberEvicted > 0 {
+		return &Entry[K, V]{Key: oldestKey, Value: oldestValue}
+	} else {
+		return nil
+	}
+}
+
 // Add adds an unlocked value to the cache. 
 // If the key exists and is unlocked, its value is updated, making it the most recently used item, and `true, nil` is returned.
 // If the key exists and is locked, its value is updated and it is unlocked, making it the most recently used item, and `true, nil` is returned.
