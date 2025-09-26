@@ -96,7 +96,7 @@ func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateLocked(key K, value V) (ok bool, 
 		llru.unlocked.Remove(key)
 
 		
-		evicted = llru.addUnlockedWithoutLockingNorCheckingCapacity()
+		evicted = llru.addOrUpdateUnlockedWithoutLockingNorCheckingCapacity(key, value)
 	}
 
 	ok = hasRoom
