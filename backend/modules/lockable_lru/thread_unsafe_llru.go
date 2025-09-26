@@ -103,12 +103,14 @@ func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool
 // If the key does not exist and there is room, it is added, making it the most recently used item. If an entry was evicted, `true, entry` is returned, otherwise `true, nil` is returned.
 // If the key does not exist and there is no room, `false, nil` is returned.
 func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateLocked(key K, value V) (ok bool, evicted *Entry[K, V]) {
+	//instead of checking if the value already exists, which complicates the capacity check, just remove
+	llru.locked.Remove(key)
+
 	hasRoom := llru.locked.Count() < llru.size
 	if hasRoom {
 		llru.unlocked.Remove(key)
-
-		
-		evicted = llru.addOrUpdateUnlockedWithoutLockingNorCheckingCapacity(key, value)
+		llru.locked.Set(key, value)
+		evicted = resize(llru.unlocked, llru.size - llru.locked.Count()) //recalculate size of unlocked in case we added a new value
 	}
 
 	ok = hasRoom
