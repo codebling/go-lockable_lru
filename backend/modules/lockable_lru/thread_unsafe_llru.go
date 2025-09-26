@@ -52,10 +52,10 @@ func NewUnsafeWithEvict[K cmap.Stringer, V any](size int, onEvicted func(key K, 
 	return &llru, nil
 }
 
-// Add adds an unlocked value to the cache. If a value was evicted, returns it.
-func (llru *ThreadunsafeLLRU[K, V]) addOrUpdateUnlockedWithoutLockingNorCheckingCapacity(key K, value V) (*Entry[K, V]) {
-	oldestKey, oldestValue, _ := llru.unlocked.GetOldest() //we can ignore the last parameter, which is false if the lru is empty
-	wasEvicted := llru.unlocked.Add(key, value)
+//modifies the passed LRU to add or update the key/value pair. If a value was evicted, returns it.
+func addOrUpdate[K cmap.Stringer, V any](lru *lru.Cache[K, V], key K, value V) (*Entry[K, V]) {
+	oldestKey, oldestValue, _ := lru.GetOldest() //we can ignore the last parameter, which is false if the lru is empty
+	wasEvicted := lru.Add(key, value)
 
 	if wasEvicted {
 		return &Entry[K, V]{Key: oldestKey, Value: oldestValue}
@@ -89,7 +89,7 @@ func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool
 		//in case we did remove from the locked values, resize the locked so we don't unnecessarily evict
 		llru.unlocked.Resize(llru.size - llru.locked.Count())
 		
-		evicted = llru.addOrUpdateUnlockedWithoutLockingNorCheckingCapacity()
+		evicted = addOrUpdate(llru.unlocked, key, value)
 	}
 
 	ok = hasRoom
