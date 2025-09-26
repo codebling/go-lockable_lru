@@ -3,7 +3,12 @@ package lockable_lru
 /*
  * A thread-safe LRU implementation with items that can be "locked"
  *
- * Based on hashicorp/golang-lru
+ * Based on hashicorp/golang-lru. Uses orcaman/concurrent-map for locked items. Both of these underlying
+ * structures are thread-safe, so if you really want ThreadunsafeLLRU to be faster, this needs to be refactored
+ * to use non-locking underlying implementations. 
+ * 
+ * The only reason there is a thread-unsafe version of this LLRU is to separate concerns and keep the code clearn.
+ * Thread safety is handled entirely in thread_safe_llru.go.
  *
  * A locked item cannot be evicted until it is unlocked. When it is unlocked, it is moved to the most recent.
  *
