@@ -25,6 +25,26 @@ func buildFullyLocked(t *testing.T, size int) *ThreadunsafeLLRU[string, string] 
 	return llru
 }
 
+func buildPartiallyLocked(t *testing.T, lockedSize int, unlockedSize int) *ThreadunsafeLLRU[string, string] {
+	llru := buildNewEmpty(t, lockedSize+unlockedSize)
+
+	for i := range lockedSize {
+		ok, evicted := llru.AddOrUpdateLocked(string(rune(i)), "x")
+		if !ok || evicted != nil {
+			t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
+		}
+	}
+
+	for i := range unlockedSize {
+		ok, evicted := llru.AddOrUpdateUnlocked(string(rune(i+lockedSize)), "x")
+		if !ok || evicted != nil {
+			t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
+		}
+	}
+
+	return llru
+}
+
 func TestAddLockedToEmpty(t *testing.T) {
 	llru := buildNewEmpty(t, 10)
 
