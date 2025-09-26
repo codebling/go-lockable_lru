@@ -87,7 +87,7 @@ func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool
 	hasRoom := llru.locked.Len() < llru.size
 	if hasRoom {
 		//in case we did remove from the locked values, resize the locked so we don't unnecessarily evict
-		llru.unlocked.Resize(llru.size - llru.locked.Count())
+		llru.unlocked.Resize(llru.size - llru.locked.Len())
 		
 		evicted = addOrUpdate(llru.unlocked, key, value)
 	}
@@ -110,7 +110,7 @@ func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateLocked(key K, value V) (ok bool, 
 	if hasRoom {
 		llru.unlocked.Remove(key)
 		llru.locked.Set(key, value)
-		evicted = resize(llru.unlocked, llru.size - llru.locked.Count()) //recalculate size of unlocked in case we added a new value
+		evicted = resize(llru.unlocked, llru.size - llru.locked.Len()) //recalculate size of unlocked in case we added a new value
 	}
 
 	ok = hasRoom
@@ -131,7 +131,7 @@ func (llru *ThreadunsafeLLRU[K, V]) Lock(key K) (ok bool) {
 	llru.locked.Set(key, value)
 
 	//resize unlocked
-	resize(llru.unlocked, llru.size - llru.locked.Count())
+	resize(llru.unlocked, llru.size - llru.locked.Len())
 
 	return true
 }
@@ -146,10 +146,10 @@ func (llru *ThreadunsafeLLRU[K, V]) Unlock(key K) (ok bool) {
 		_, exists = llru.unlocked.Get(key)
 		return exists
 	}
-	llru.locked.Remove(key)
+	llru.locked.Delete(key)
 
 	//grow unlocked to prevent unnecessary eviction prior to adding the new value
-	resize(llru.unlocked, llru.size - llru.locked.Count())
+	resize(llru.unlocked, llru.size - llru.locked.Len())
 
 	llru.unlocked.Set(key, value)
 
