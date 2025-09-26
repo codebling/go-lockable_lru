@@ -135,3 +135,23 @@ func (llru *ThreadunsafeLLRU[K, V]) Lock(key K) (ok bool) {
 
 	return true
 }
+
+// Unlocks a locked value in the cache. 
+// If the key exists and is locked, it is unlocked, making it the most recently used item, and `true` is returned
+// If the key exists and is unlocked, `true` is returned
+// Returns `false` if the key was not in the cache
+func (llru *ThreadunsafeLLRU[K, V]) Unlock(key K) (ok bool) {
+	value, exists := llru.locked.Get(key)
+	if !exists {
+		_, exists = llru.unlocked.Get(key)
+		return exists
+	}
+	llru.locked.Remove(key)
+
+	//grow unlocked to prevent unnecessary eviction prior to adding the new value
+	resize(llru.unlocked, llru.size - llru.locked.Count())
+
+	llru.unlocked.Set(key, value)
+
+	return true
+}
