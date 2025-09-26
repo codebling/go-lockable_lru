@@ -151,7 +151,7 @@ func (llru *ThreadunsafeLLRU[K, V]) Unlock(key K) (ok bool) {
 	//grow unlocked to prevent unnecessary eviction prior to adding the new value
 	resize(llru.unlocked, llru.size - llru.locked.Len())
 
-	llru.unlocked.Set(key, value)
+	llru.unlocked.Add(key, value)
 
 	return true
 }
