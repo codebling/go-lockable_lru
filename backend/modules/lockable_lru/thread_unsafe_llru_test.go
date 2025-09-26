@@ -83,3 +83,21 @@ func TestAddUnlockedToFullyLocked(t *testing.T) {
 	}
 }
 
+func TestAddLockedToFullButEvictable(t *testing.T) {
+	llru := buildPartiallyLocked(t, 2, 2)
+
+	ok, evicted := llru.AddOrUpdateLocked("new key", "x")
+	if !ok || evicted == nil {
+		t.Errorf("expected `true` and one item evicted but got %v, %v", ok, evicted)
+	}
+}
+
+func TestAddUnlockedToFullButEvictable(t *testing.T) {
+	llru := buildPartiallyLocked(t, 2, 2)
+
+	ok, evicted := llru.AddOrUpdateUnlocked("new key", "x")
+	if !ok || evicted == nil {
+		t.Errorf("expected `true` and one item evicted but got %v, %v", ok, evicted)
+	}
+}
+
