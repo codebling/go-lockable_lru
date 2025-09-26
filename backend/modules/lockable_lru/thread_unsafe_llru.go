@@ -15,34 +15,34 @@ package lockable_lru
  */
 import (
 	lru "github.com/hashicorp/golang-lru/v2"
-	cmap "github.com/orcaman/concurrent-map/v2"
+	gmap "github.com/wk8/go-ordered-map/v2"
 )
 
-type ThreadunsafeLLRU[K cmap.Stringer, V any] struct {
+type ThreadunsafeLLRU[K comparable, V any] struct {
 	unlocked         *lru.Cache[K, V]							//unlocked k-v store whose values can be evicted when a new value is added
-	locked						 cmap.ConcurrentMap[K, V]   //locked k-v store, whose values can never be evicted
+	locked						*gmap.OrderedMap[K,V]   //locked k-v store, whose values can never be evicted
 	size int			                                //total size, combined locked and unlocked
 }
 
-type Entry[K cmap.Stringer, V any] struct {
+type Entry[K comparable, V any] struct {
 	Key K
 	Value V
 }
 
 // New creates an LRU of the given size.
-func NewUnsafe[K cmap.Stringer, V any](size int) (*ThreadunsafeLLRU[K, V], error) {
+func NewUnsafe[K comparable, V any](size int) (*ThreadunsafeLLRU[K, V], error) {
 	return NewUnsafeWithEvict[K, V](size, nil)
 }
 
 // NewWithEvict constructs a fixed size cache with the given eviction
 // callback.
-func NewUnsafeWithEvict[K cmap.Stringer, V any](size int, onEvicted func(key K, value V)) (*ThreadunsafeLLRU[K, V], error) {
+func NewUnsafeWithEvict[K comparable, V any](size int, onEvicted func(key K, value V)) (*ThreadunsafeLLRU[K, V], error) {
 	lru, err := lru.NewWithEvict(size, onEvicted)
 	if err != nil {	
 		return nil, err
 	}
 
-	m := cmap.NewStringer[K, V]()
+	m := gmap.New[K,V]()
 	llru := ThreadunsafeLLRU[K, V]{
 		unlocked: lru,
 		locked: m,
@@ -53,7 +53,7 @@ func NewUnsafeWithEvict[K cmap.Stringer, V any](size int, onEvicted func(key K, 
 }
 
 //modifies the passed LRU to add or update the key/value pair. If a value was evicted, returns it.
-func addOrUpdate[K cmap.Stringer, V any](lru *lru.Cache[K, V], key K, value V) (*Entry[K, V]) {
+func addOrUpdate[K comparable, V any](lru *lru.Cache[K, V], key K, value V) (*Entry[K, V]) {
 	oldestKey, oldestValue, _ := lru.GetOldest() //we can ignore the last parameter, which is false if the lru is empty
 	wasEvicted := lru.Add(key, value)
 
@@ -65,7 +65,7 @@ func addOrUpdate[K cmap.Stringer, V any](lru *lru.Cache[K, V], key K, value V) (
 }
 
 //modifies the passed LRU to change its size. If one item was evicted, it is returned. If more than one is evicted, the oldest is returned
-func resize[K cmap.Stringer, V any](lru *lru.Cache[K, V], size int) (*Entry[K, V]) {
+func resize[K comparable, V any](lru *lru.Cache[K, V], size int) (*Entry[K, V]) {
 	oldestKey, oldestValue, _ := lru.GetOldest() //we can ignore the last parameter, which is false if the lru is empty
 	numberEvicted := lru.Resize(size)
 
@@ -82,9 +82,9 @@ func resize[K cmap.Stringer, V any](lru *lru.Cache[K, V], size int) (*Entry[K, V
 // If the key does not exist and there is room, it is added, making it the most recently used item. If an entry was evicted, `true, entry` is returned, otherwise `true, nil` is returned.
 // If the key does not exist and there is no room, `false, nil` is returned.
 func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool, evicted *Entry[K, V]) {
-	llru.locked.Remove(key) //safe to do here, we'll never remove a value and then not have room
+	llru.locked.Delete(key) //safe to do here, we'll never remove a value and then not have room
 
-	hasRoom := llru.locked.Count() < llru.size
+	hasRoom := llru.locked.Len() < llru.size
 	if hasRoom {
 		//in case we did remove from the locked values, resize the locked so we don't unnecessarily evict
 		llru.unlocked.Resize(llru.size - llru.locked.Count())
@@ -104,9 +104,9 @@ func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool
 // If the key does not exist and there is no room, `false, nil` is returned.
 func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateLocked(key K, value V) (ok bool, evicted *Entry[K, V]) {
 	//instead of checking if the value already exists, which complicates the capacity check, just remove
-	llru.locked.Remove(key)
+	llru.locked.Delete(key)
 
-	hasRoom := llru.locked.Count() < llru.size
+	hasRoom := llru.locked.Len() < llru.size
 	if hasRoom {
 		llru.unlocked.Remove(key)
 		llru.locked.Set(key, value)
