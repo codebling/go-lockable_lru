@@ -9,13 +9,10 @@ func TestAddLockedToEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not create llru: %v", err)
 	}
-	ok, evicted := llru.AddOrUpdateLocked("x", "x")
 
-	if !ok {
-		t.Errorf("expected ok to be true, got false")
-	}
-	if evicted != nil {
-		t.Errorf("expected evicted to be nil, got %v", evicted)
+	ok, evicted := llru.AddOrUpdateLocked("x", "x")
+	if !ok || evicted != nil {
+		t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
 	}
 }
 
@@ -25,11 +22,8 @@ func TestAddUnlockedToEmpty(t *testing.T) {
 		t.Fatalf("could not create llru: %v", err)
 	}
 	ok, evicted := llru.AddOrUpdateUnlocked("x", "x")
-
-	if !ok {
-		t.Errorf("expected ok to be true, got false")
-	}
-	if evicted != nil {
-		t.Errorf("expected evicted to be nil, got %v", evicted)
+	if !ok || evicted != nil {
+		t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
 	}
 }
+
