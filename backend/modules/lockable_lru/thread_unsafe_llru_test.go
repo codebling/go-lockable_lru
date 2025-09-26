@@ -126,9 +126,10 @@ func TestAddOrUpdateUnlockedCase1(t *testing.T) {
 		t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
 	}
 
-	//check that if we add another, "new key1" is not the entry that gets evicted
+	//check that if we add another, "new key1" is not the entry that gets evicted (it was most recently used)
 	ok, evicted = llru.AddOrUpdateUnlocked("new key3", "3")
 	if !ok || evicted == nil || evicted.Key == "new key1" || evicted.Value == "1" {
 		t.Errorf("expected `true` and NOT `Entry{Key: \"new key1\", Value: \"1\"}` evicted but got %v, %v", ok, evicted)
 	}
 }
+
