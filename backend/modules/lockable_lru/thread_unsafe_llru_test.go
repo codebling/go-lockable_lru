@@ -101,3 +101,15 @@ func TestAddUnlockedToFullButEvictable(t *testing.T) {
 	}
 }
 
+func TestEvictsOldestEntry(t *testing.T) {
+	llru := buildPartiallyLocked(t, 2, 2)
+
+	//room for 2 unlocked entries. When we add 3 in a row, the first should get evicted
+	_, _ = llru.AddOrUpdateUnlocked("new key1", "1")
+	_, _ = llru.AddOrUpdateUnlocked("new key2", "2")
+	ok, evicted := llru.AddOrUpdateUnlocked("new key3", "3")
+
+	if !ok || evicted == nil || evicted.Key != "new key1" || evicted.Value != "1" {
+		t.Errorf("expected `true` and `Entry{Key: \"new key1\", Value: \"1\"}` evicted but got %v, %v", ok, evicted)
+	}
+}
