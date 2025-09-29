@@ -155,3 +155,20 @@ func (llru *ThreadunsafeLLRU[K, V]) Unlock(key K) (ok bool) {
 
 	return true
 }
+
+// If the key exists and is locked, the value is returned
+// If the key exists and is unlocked, it becomes the most recently used item, and the value is returned
+// If the key does not exist, `nil` is returned
+func (llru *ThreadunsafeLLRU[K, V]) Get(key K) (value *V) {
+	val, exists := llru.locked.Get(key)
+	if exists {
+		return &val
+	} else {
+		val, exists = llru.unlocked.Get(key)
+		if exists {
+			return &val
+		} else {
+			return nil
+		}
+	}
+}
