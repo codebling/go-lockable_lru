@@ -59,3 +59,21 @@ func (llru *LLRU[K, V]) AddOrUpdateLocked(key K, value V) (ok bool, evicted *Ent
 	defer llru.lock.Unlock()
 	return llru.tullru.AddOrUpdateLocked(key, value)
 }
+
+func (llru *LLRU[K, V]) Lock(key K) (ok bool) {
+	llru.lock.Lock()
+	defer llru.lock.Unlock()
+	return llru.tullru.Lock(key)
+}
+
+func (llru *LLRU[K, V]) Unlock(key K) (ok bool) {
+	llru.lock.Lock()
+	defer llru.lock.Unlock()
+	return llru.tullru.Unlock(key)
+}
+
+func (llru *LLRU[K, V]) Get(key K) (value *V) {
+	llru.lock.Lock()
+	defer llru.lock.Unlock()
+	return llru.tullru.Get(key)
+}
