@@ -15,30 +15,30 @@ import (
 )
 
 type LLRU[K cmap.Stringer, V any] struct {
-	llru ThreadunsafeLLRU[K, V]
+	tullru ThreadunsafeLLRU[K, V]
 	lock sync.RWMutex //even though the underlying structures are threadsafe, we need to lock if we have to do 2 or more operations - which means we have to lock for every operation, otherwise we could deadlock if one call has locked the outer lock but is waiting on the inner lock, and another call has not locked the outer but has locked the inner
 }
 
 // New creates an LRU of the given size.
 func New[K cmap.Stringer, V any](size int) (*LLRU[K, V], error) {
-	llru, err := NewUnsafe[K, V](size)
+	tullru, err := NewUnsafe[K, V](size)
 	if err != nil {
 		return nil, err
 	}
 	return &LLRU[K, V]{
-		llru: *llru,
+		tullru: *tullru,
 	}, nil
 }
 
 // NewWithEvict constructs a fixed size cache with the given eviction
 // callback.
 func NewWithEvict[K cmap.Stringer, V any](size int, onEvicted func(key K, value V)) (*LLRU[K, V], error) {
-	llru, err := NewUnsafeWithEvict(size, onEvicted)
+	tullru, err := NewUnsafeWithEvict(size, onEvicted)
 	if err != nil {
 		return nil, err
 	}
 	return &LLRU[K, V]{
-		llru: *llru,
+		tullru: *tullru,
 	}, nil
 }
 
@@ -48,7 +48,7 @@ func NewWithEvict[K cmap.Stringer, V any](size int, onEvicted func(key K, value 
 func (llru *LLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool, evicted *Entry[K, V]) {
 	llru.lock.Lock()
 	defer llru.lock.Unlock()
-	return llru.AddOrUpdateUnlocked(key, value)
+	return llru.tullru.AddOrUpdateUnlocked(key, value)
 }
 
 // Add adds a locked value to the cache.
@@ -57,5 +57,5 @@ func (llru *LLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool, evicted *E
 func (llru *LLRU[K, V]) AddOrUpdateLocked(key K, value V) (ok bool, evicted *Entry[K, V]) {
 	llru.lock.Lock()
 	defer llru.lock.Unlock()
-	return llru.AddOrUpdateLocked(key, value)
+	return llru.tullru.AddOrUpdateLocked(key, value)
 }
