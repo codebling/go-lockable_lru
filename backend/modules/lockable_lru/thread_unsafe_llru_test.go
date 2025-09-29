@@ -380,3 +380,46 @@ func TestUnlockCase3(t *testing.T) {
 		t.Errorf("expected `false` but got %v", ok)
 	}
 }
+
+
+// If the key exists and is locked, the value is returned
+func TestGetCase1(t *testing.T) {
+	llru := buildNewEmpty(t, 2)
+
+	_, _ = llru.AddOrUpdateLocked("new key1", "1")
+
+	value := llru.Get("new key1")
+	if *value != "1" {
+		t.Errorf("expected `1` but got %v", *value)
+	}
+}
+
+// If the key exists and is unlocked, it becomes the most recently used item, and the value is returned
+func TestGetCase2(t *testing.T) {
+	llru := buildNewEmpty(t, 2)
+
+	_, _ = llru.AddOrUpdateUnlocked("new key1", "1")
+	_, _ = llru.AddOrUpdateUnlocked("new key2", "2")
+
+	value := llru.Get("new key1")
+	if *value != "1" {
+		t.Errorf("expected `1` but got %v", *value)
+	}
+
+	//test that `new key1`, which was the oldest, became most recent and didn't get evicted
+	ok, evicted := llru.AddOrUpdateUnlocked("new key3", "3")
+	if !ok || evicted == nil || evicted.Key == "new key1" || evicted.Value == "1" {
+		t.Errorf("expected `true` and NOT `Entry{Key: \"new key1\", Value: \"1\"}` evicted but got %v, %v", ok, evicted)
+	}
+
+}
+
+// If the key does not exist, `nil` is returned
+func TestGetCase3(t *testing.T) {
+	llru := buildNewEmpty(t, 2)
+
+	value := llru.Get("x")
+	if value != nil {
+		t.Errorf("expected `nil` but got %v", value)
+	}
+}
