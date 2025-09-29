@@ -210,3 +210,71 @@ func TestAddOrUpdateUnlockedCase4(t *testing.T) {
 	}
 
 }
+
+// If the key exists and is locked, its value is updated, and `true, nil` is returned.
+func TestAddOrUpdateLockedCase1(t *testing.T) {
+	llru := buildNewEmpty(t, 1)
+
+	//add the test key
+	_, _ = llru.AddOrUpdateLocked("new key1", "1")
+
+	ok, evicted := llru.AddOrUpdateLocked("new key", "x")
+	if ok || evicted != nil {
+		t.Errorf("expected `false, nil` but got %v, %v", ok, evicted)
+	}
+
+}
+
+// If the key exists and is unlocked, its value is updated and it is locked, and `true, nil` is returned.
+func TestAddOrUpdateLockedCase2(t *testing.T) {
+	llru := buildNewEmpty(t, 1)
+
+	_, _ = llru.AddOrUpdateUnlocked("new key", "x")
+	ok, evicted := llru.AddOrUpdateLocked("new key", "x")
+	if !ok || evicted != nil {
+		t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
+	}
+
+	//key should now be locked, try adding another to confirm lock
+	ok, evicted = llru.AddOrUpdateLocked("new key1", "1")
+	if ok || evicted != nil {
+		t.Errorf("expected `false, nil` but got %v, %v", ok, evicted)
+	}
+}
+
+// If the key does not exist and there is room, it is added, making it the most recently used item. If an entry was evicted, `true, entry` is returned, otherwise `true, nil` is returned.
+// If an entry was evicted, `true, entry` is returned
+func TestAddOrUpdateLockedCase3Part1(t *testing.T) {
+	llru := buildNewEmpty(t, 1)
+
+	_, _ = llru.AddOrUpdateUnlocked("new key1", "1")
+
+	ok, evicted := llru.AddOrUpdateLocked("new key2", "2")
+	if !ok || evicted == nil || evicted.Key != "new key1" || evicted.Value != "1" {
+		t.Errorf("expected `true` and `Entry{Key: \"new key1\", Value: \"1\"}` evicted but got %v, %v", ok, evicted)
+	}
+
+}
+
+// If the key does not exist and there is room, it is added, making it the most recently used item. If an entry was evicted, `true, entry` is returned, otherwise `true, nil` is returned.
+// If an entry was not evicted, `true, nil` is returned
+func TestAddOrUpdateLockedCase3Part2(t *testing.T) {
+	llru := buildNewEmpty(t, 1)
+
+	ok, evicted := llru.AddOrUpdateLocked("new key2", "2")
+	if !ok || evicted != nil {
+		t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
+	}
+}
+
+// If the key does not exist and there is no room, `false, nil` is returned.
+func TestAddOrUpdateLockedCase4(t *testing.T) {
+	llru := buildNewEmpty(t, 1)
+
+	_, _ = llru.AddOrUpdateLocked("new key1", "1")
+
+	ok, evicted := llru.AddOrUpdateLocked("new key2", "2")
+	if ok || evicted != nil {
+		t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
+	}
+}
