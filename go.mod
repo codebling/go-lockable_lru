@@ -1,4 +1,4 @@
-module github.com/codebling/lockable_lru
+module github.com/codebling/go-lockable_lru
 
 go 1.22
 
