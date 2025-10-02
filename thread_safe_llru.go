@@ -10,17 +10,15 @@ package lockable_lru
  */
 import (
 	"sync"
-
-	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
-type LLRU[K cmap.Stringer, V any] struct {
+type LLRU[K comparable, V any] struct {
 	tullru ThreadunsafeLLRU[K, V]
 	lock sync.RWMutex //even though the underlying structures are threadsafe, we need to lock if we have to do 2 or more operations - which means we have to lock for every operation, otherwise we could deadlock if one call has locked the outer lock but is waiting on the inner lock, and another call has not locked the outer but has locked the inner
 }
 
 // New creates an LRU of the given size.
-func New[K cmap.Stringer, V any](size int) (*LLRU[K, V], error) {
+func New[K comparable, V any](size int) (*LLRU[K, V], error) {
 	tullru, err := NewUnsafe[K, V](size)
 	if err != nil {
 		return nil, err
@@ -32,7 +30,7 @@ func New[K cmap.Stringer, V any](size int) (*LLRU[K, V], error) {
 
 // NewWithEvict constructs a fixed size cache with the given eviction
 // callback.
-func NewWithEvict[K cmap.Stringer, V any](size int, onEvicted func(key K, value V)) (*LLRU[K, V], error) {
+func NewWithEvict[K comparable, V any](size int, onEvicted func(key K, value V)) (*LLRU[K, V], error) {
 	tullru, err := NewUnsafeWithEvict(size, onEvicted)
 	if err != nil {
 		return nil, err
