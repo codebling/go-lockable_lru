@@ -81,3 +81,9 @@ func (llru *LLRU[K, V]) Contains(key K) bool {
 	defer llru.lock.Unlock()
 	return llru.tullru.Contains(key)
 }
+
+func (llru *LLRU[K, V]) Len() int {
+	llru.lock.Lock()
+	defer llru.lock.Unlock()
+	return llru.tullru.Len()
+}

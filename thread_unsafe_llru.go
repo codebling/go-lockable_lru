@@ -184,3 +184,8 @@ func (llru *ThreadunsafeLLRU[K, V]) Contains(key K) bool {
 
 	return inLocked
 }
+
+// Returns the number of entries
+func (llru *ThreadunsafeLLRU[K, V]) Len() int {
+	return llru.locked.Len() + llru.unlocked.Len()
+}

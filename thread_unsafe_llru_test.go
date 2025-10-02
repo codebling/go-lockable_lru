@@ -474,3 +474,15 @@ func TestContainsReturnsFalseWhenKeyDoesNotExist(t *testing.T) {
 	}
 
 }
+
+func TestLen(t *testing.T) {
+	lockedLen := 3
+	unlockedLen := 3
+	llru := buildPartiallyLocked(t, lockedLen, unlockedLen)
+
+	len := llru.Len()
+	expectedLen := lockedLen + unlockedLen
+	if len != expectedLen {
+		t.Errorf("expected `%v` but got %v", expectedLen, len)
+	}
+}
