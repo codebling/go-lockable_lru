@@ -423,3 +423,54 @@ func TestGetCase3(t *testing.T) {
 		t.Errorf("expected `nil` but got %v", value)
 	}
 }
+
+// If the key exists, true is returned. The recentness of the item is unchanged
+func TestContainsReturnsTrueWhenExistsInLocked(t *testing.T) {
+	llru := buildNewEmpty(t, 2)
+
+	_, _ = llru.AddOrUpdateLocked("new key1", "1")
+
+	exists := llru.Contains("new key1")
+	if exists != true {
+		t.Errorf("expected `true` but got %v", exists)
+	}
+}
+
+// If the key exists, true is returned. The recentness of the item is unchanged
+func TestContainsReturnsTrueWhenExistsInUnlocked(t *testing.T) {
+	llru := buildNewEmpty(t, 2)
+
+	_, _ = llru.AddOrUpdateUnlocked("new key1", "1")
+
+	exists := llru.Contains("new key1")
+	if exists != true {
+		t.Errorf("expected `true` but got %v", exists)
+	}
+}
+
+// If the key exists, true is returned. The recentness of the item is unchanged
+func TestContainsDoesNotUpdateRecentness(t *testing.T) {
+	llru := buildNewEmpty(t, 2)
+
+	_, _ = llru.AddOrUpdateUnlocked("new key1", "1")
+	_, _ = llru.AddOrUpdateUnlocked("new key2", "2")
+
+	_ = llru.Contains("new key1")
+
+	//"new key1" should still be the oldest. Since we're full, it should be the next evicted.
+	ok, evicted := llru.AddOrUpdateUnlocked("new key3", "3")
+	if !ok || evicted == nil || evicted.Key != "new key1" || evicted.Value != "1" {
+		t.Errorf("expected `true` and `Entry{Key: \"new key1\", Value: \"1\"}` evicted but got %v, %v", ok, evicted)
+	}
+}
+
+// If the key does not exist, false is returned. 
+func TestContainsReturnsFalseWhenKeyDoesNotExist(t *testing.T) {
+	llru := buildPartiallyLocked(t, 3, 3)
+
+	exists := llru.Contains("xyzabc")
+	if exists != false {
+		t.Errorf("expected `false` but got %v", exists)
+	}
+
+}

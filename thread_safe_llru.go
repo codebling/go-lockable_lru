@@ -75,3 +75,9 @@ func (llru *LLRU[K, V]) Get(key K) (value *V) {
 	defer llru.lock.Unlock()
 	return llru.tullru.Get(key)
 }
+
+func (llru *LLRU[K, V]) Contains(key K) bool {
+	llru.lock.Lock()
+	defer llru.lock.Unlock()
+	return llru.tullru.Contains(key)
+}

@@ -172,3 +172,15 @@ func (llru *ThreadunsafeLLRU[K, V]) Get(key K) (value *V) {
 		}
 	}
 }
+
+// If the key exists, true is returned. The recentness of the item is unchanged
+// If the key does not exist, false is returned. 
+func (llru *ThreadunsafeLLRU[K, V]) Contains(key K) bool {
+	inUnlocked := llru.unlocked.Contains(key)
+	if inUnlocked {
+		return inUnlocked
+	}
+	_, inLocked := llru.locked.Get(key)
+
+	return inLocked
+}
