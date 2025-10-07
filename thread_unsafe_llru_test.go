@@ -29,14 +29,14 @@ func buildPartiallyLocked(t *testing.T, lockedSize int, unlockedSize int) *Threa
 	llru := buildNewEmpty(t, lockedSize+unlockedSize)
 
 	for i := range lockedSize {
-		ok, evicted := llru.AddOrUpdateLocked(string(rune(i)), "x")
+		ok, evicted := llru.AddOrUpdateLocked(string(rune(i)), "x" + strconv.Itoa(i))
 		if !ok || evicted != nil {
 			t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
 		}
 	}
 
 	for i := range unlockedSize {
-		ok, evicted := llru.AddOrUpdateUnlocked(string(rune(i+lockedSize)), "x")
+		ok, evicted := llru.AddOrUpdateUnlocked(string(rune(i+lockedSize)), "x" + strconv.Itoa(i+lockedSize))
 		if !ok || evicted != nil {
 			t.Errorf("expected `true, nil` but got %v, %v", ok, evicted)
 		}
