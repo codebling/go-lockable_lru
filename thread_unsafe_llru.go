@@ -208,3 +208,15 @@ func (llru *ThreadunsafeLLRU[K, V]) Values() []V {
 
 	return append(unlockedValues, lockedValues...)
 }
+
+func (llru *ThreadunsafeLLRU[K, V]) RemoveOldest() *Entry[K, V] {
+	oldestKey, oldestValue, ok := llru.unlocked.RemoveOldest()
+
+	if ok {
+		return &Entry[K, V]{
+			Key: oldestKey,
+			Value: oldestValue,
+		}
+	}
+	return nil
+}

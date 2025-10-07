@@ -542,3 +542,18 @@ func TestValuesAreOrdered(t *testing.T) {
 		t.Errorf("expected values to be in correct order")
 	}
 }
+
+func TestRemoveOldest(t *testing.T) {
+	llru := buildNewEmpty(t, 4)
+
+	_, _ = llru.AddOrUpdateUnlocked("new key1", "1")
+	_, _ = llru.AddOrUpdateUnlocked("new key2", "2")
+	_, _ = llru.AddOrUpdateLocked("new key3", "3")
+	_, _ = llru.AddOrUpdateLocked("new key4", "4")
+
+	oldest := llru.RemoveOldest()
+
+	if oldest == nil || oldest.Key != "new key1" || oldest.Value != "1" {
+		t.Errorf("expected `Entry{Key: \"new key1\", Value: \"1\"}` evicted but got %v", oldest)
+	}
+}

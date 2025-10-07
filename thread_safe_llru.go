@@ -93,3 +93,9 @@ func (llru *LLRU[K, V]) Values() []V {
 	defer llru.lock.Unlock()
 	return llru.tullru.Values()
 }
+
+func (llru *LLRU[K, V]) RemoveOldest() *Entry[K, V] {
+	llru.lock.Lock()
+	defer llru.lock.Unlock()
+	return llru.tullru.RemoveOldest()
+}
