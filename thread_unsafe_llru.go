@@ -76,6 +76,17 @@ func resize[K comparable, V any](lru *lru.Cache[K, V], size int) (*Entry[K, V]) 
 	}
 }
 
+//return array of values from oldest to newest
+func collectValues[K comparable, V any](gmap *gmap.OrderedMap[K,V]) []V {
+	values := make([]V, gmap.Len())
+	i := 0
+	for pair := gmap.Oldest(); pair != nil; pair = pair.Next() {
+		values[i] = pair.Value
+		i++
+	}
+	return values
+}
+
 // Add adds an unlocked value to the cache. 
 // If the key exists and is unlocked, its value is updated, making it the most recently used item, and `true, nil` is returned.
 // If the key exists and is locked, its value is updated and it is unlocked, making it the most recently used item, and `true, nil` is returned.
