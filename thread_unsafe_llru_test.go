@@ -1,6 +1,8 @@
 package lockable_lru
 
 import (
+	"slices"
+	"strconv"
 	"testing"
 )
 
@@ -484,5 +486,59 @@ func TestLen(t *testing.T) {
 	expectedLen := lockedLen + unlockedLen
 	if len != expectedLen {
 		t.Errorf("expected `%v` but got %v", expectedLen, len)
+	}
+}
+
+func TestValuesLenEqualsLen(t *testing.T) {
+	lockedLen := 3
+	unlockedLen := 3
+	length := lockedLen + unlockedLen
+	llru := buildPartiallyLocked(t, lockedLen, unlockedLen)
+
+	valuesLen := len(llru.Values())
+
+	if valuesLen != length {
+		t.Errorf("expected `%v` but got %v", length, valuesLen)
+	}
+}
+
+
+func TestValuesContainsAllAdded(t *testing.T) {
+		llru := buildNewEmpty(t, 4)
+
+	_, _ = llru.AddOrUpdateUnlocked("new key1", "1")
+	_, _ = llru.AddOrUpdateUnlocked("new key2", "2")
+	_, _ = llru.AddOrUpdateLocked("new key3", "3")
+	_, _ = llru.AddOrUpdateLocked("new key4", "4")
+
+	values := llru.Values()
+
+	contains1 := slices.Contains(values, "1")
+	contains2 := slices.Contains(values, "2")
+	contains3 := slices.Contains(values, "3")
+	contains4 := slices.Contains(values, "4")
+
+	if !contains1 || !contains2 || !contains3 || !contains4 {
+		t.Errorf("expected to contain values but did not")
+	}
+}
+
+func TestValuesAreOrdered(t *testing.T) {
+	llru := buildNewEmpty(t, 4)
+
+	_, _ = llru.AddOrUpdateUnlocked("new key1", "1")
+	_, _ = llru.AddOrUpdateUnlocked("new key2", "2")
+	_, _ = llru.AddOrUpdateLocked("new key3", "3")
+	_, _ = llru.AddOrUpdateLocked("new key4", "4")
+
+	values := llru.Values()
+
+	isInCorrectPosition1 := values[0] == "1"
+	isInCorrectPosition2 := values[1] == "2"
+	isInCorrectPosition3 := values[2] == "3"
+	isInCorrectPosition4 := values[3] == "4"
+
+	if !isInCorrectPosition1 || !isInCorrectPosition2 || !isInCorrectPosition3 || !isInCorrectPosition4 {
+		t.Errorf("expected values to be in correct order")
 	}
 }

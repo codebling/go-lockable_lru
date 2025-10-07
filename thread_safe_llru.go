@@ -87,3 +87,9 @@ func (llru *LLRU[K, V]) Len() int {
 	defer llru.lock.Unlock()
 	return llru.tullru.Len()
 }
+
+func (llru *LLRU[K, V]) Values() []V {
+		llru.lock.Lock()
+	defer llru.lock.Unlock()
+	return llru.tullru.Values()
+}

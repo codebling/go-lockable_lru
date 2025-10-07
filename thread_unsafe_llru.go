@@ -200,3 +200,11 @@ func (llru *ThreadunsafeLLRU[K, V]) Contains(key K) bool {
 func (llru *ThreadunsafeLLRU[K, V]) Len() int {
 	return llru.locked.Len() + llru.unlocked.Len()
 }
+
+// Values returns a slice of the values, starting with unlocked from oldest to newest, then locked
+func (llru *ThreadunsafeLLRU[K, V]) Values() []V {
+	unlockedValues := llru.unlocked.Values()
+	lockedValues := collectValues(llru.locked)
+
+	return append(unlockedValues, lockedValues...)
+}
