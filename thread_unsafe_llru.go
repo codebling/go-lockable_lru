@@ -98,6 +98,31 @@ func collectKeysFromUnderlyingLocked[K comparable, V any](gmap *gmap.OrderedMap[
 	return values
 }
 
+//return array of entries from oldest to newest
+func collectEntriesFromUnderlyingLocked[K comparable, V any](gmap *gmap.OrderedMap[K,V]) []Entry[K,V] {
+	entries := make([]Entry[K,V], gmap.Len())
+	i := 0
+	for pair := gmap.Oldest(); pair != nil; pair = pair.Next() {
+		entries[i] = Entry[K,V]{pair.Key, pair.Value}
+		i++
+	}
+	return entries
+}
+
+//return array of entries
+func collectEntriesFromUnderlyingUnlocked[K comparable, V any](lru *lru.Cache[K, V]) []Entry[K,V] {
+	keys := lru.Keys()
+	values := lru.Values()
+
+	entries := make([]Entry[K,V], lru.Len())
+
+	
+	for i := 0; i < lru.Len(); i++ {
+		entries[i] = Entry[K,V]{keys[i], values[i]}
+	}
+	return entries
+}
+
 // Add adds an unlocked value to the cache. 
 // If the key exists and is unlocked, its value is updated, making it the most recently used item, and `true, nil` is returned.
 // If the key exists and is locked, its value is updated and it is unlocked, making it the most recently used item, and `true, nil` is returned.
@@ -210,6 +235,14 @@ func (llru *ThreadunsafeLLRU[K, V]) Contains(key K) bool {
 // Returns the number of entries
 func (llru *ThreadunsafeLLRU[K, V]) Len() int {
 	return llru.locked.Len() + llru.unlocked.Len()
+}
+
+// Returns an array of every entry, starting with unlocked from oldest to newest, then locked
+func (llru *ThreadunsafeLLRU[K, V]) Entries() []Entry[K,V] {
+	unlockedEntries := collectEntriesFromUnderlyingUnlocked(llru.unlocked)
+	lockedEntries := collectEntriesFromUnderlyingLocked(llru.locked)
+
+	return append(unlockedEntries, lockedEntries...)
 }
 
 // Returns an array of every value, starting with unlocked from oldest to newest, then locked
