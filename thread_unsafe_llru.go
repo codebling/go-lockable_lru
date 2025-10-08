@@ -87,7 +87,7 @@ func collectValuesFromUnderlyingLocked[K comparable, V any](gmap *gmap.OrderedMa
 	return values
 }
 
-//return array of values from oldest to newest
+//return array of keys from oldest to newest
 func collectKeysFromUnderlyingLocked[K comparable, V any](gmap *gmap.OrderedMap[K,V]) []K {
 	values := make([]K, gmap.Len())
 	i := 0
