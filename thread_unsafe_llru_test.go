@@ -554,6 +554,6 @@ func TestRemoveOldest(t *testing.T) {
 	oldest := llru.RemoveOldest()
 
 	if oldest == nil || oldest.Key != "new key1" || oldest.Value != "1" {
-		t.Errorf("expected `Entry{Key: \"new key1\", Value: \"1\"}` evicted but got %v", oldest)
+		t.Errorf("expected `Entry{Key: \"new key1\", Value: \"1\"}` but got %v", oldest)
 	}
 }
