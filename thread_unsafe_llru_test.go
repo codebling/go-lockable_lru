@@ -599,3 +599,29 @@ func TestReplaceOldestKeyCase3(t *testing.T) {
 	}
 }
 
+//If there is at least one unlocked entry, replaces the value in the oldest entry with `newValue` and returns the oldest entry's old value, the key, and `true`
+func TestReplaceOldestValueCase1(t *testing.T) {
+	llru := buildNewEmpty(t, 4)
+
+	_, _ = llru.AddOrUpdateUnlocked("key1", "-1")
+	_, _ = llru.AddOrUpdateUnlocked("key2", "2")
+
+	oldValue, key, ok := llru.ReplaceOldestValue("1")
+
+	if !ok || *oldValue != "-1" || *key != "key1" {
+		t.Errorf("expected `\"-1\", \"key1\", true` but got %v, %v, %v", oldValue, key, ok)
+	}
+}
+
+//If there are no unlocked entries, returns `nil, nil, false`
+func TestReplaceOldestValueCase2(t *testing.T) {
+	llru := buildNewEmpty(t, 4)
+
+	_, _ = llru.AddOrUpdateLocked("old key1", "1")
+
+	oldValue, key, ok := llru.ReplaceOldestValue("new value")
+	
+	if ok || oldValue != nil || key != nil {
+		t.Errorf("expected `nil, nil, false` but got %v, %v, %v", oldValue, key, ok)
+	}
+}
