@@ -87,6 +87,17 @@ func collectValues[K comparable, V any](gmap *gmap.OrderedMap[K,V]) []V {
 	return values
 }
 
+//return array of values from oldest to newest
+func collectKeys[K comparable, V any](gmap *gmap.OrderedMap[K,V]) []K {
+	values := make([]K, gmap.Len())
+	i := 0
+	for pair := gmap.Oldest(); pair != nil; pair = pair.Next() {
+		values[i] = pair.Key
+		i++
+	}
+	return values
+}
+
 // Add adds an unlocked value to the cache. 
 // If the key exists and is unlocked, its value is updated, making it the most recently used item, and `true, nil` is returned.
 // If the key exists and is locked, its value is updated and it is unlocked, making it the most recently used item, and `true, nil` is returned.
@@ -199,6 +210,14 @@ func (llru *ThreadunsafeLLRU[K, V]) Contains(key K) bool {
 // Returns the number of entries
 func (llru *ThreadunsafeLLRU[K, V]) Len() int {
 	return llru.locked.Len() + llru.unlocked.Len()
+}
+
+// Returns an array of every value, starting with unlocked from oldest to newest, then locked
+func (llru *ThreadunsafeLLRU[K, V]) Keys() []K {
+	unlockedKeys := llru.unlocked.Keys()
+	lockedKeys := collectKeys(llru.locked)
+
+	return append(unlockedKeys, lockedKeys...)
 }
 
 // Returns an array of every value, starting with unlocked from oldest to newest, then locked

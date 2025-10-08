@@ -489,6 +489,59 @@ func TestLen(t *testing.T) {
 	}
 }
 
+func TestKeysLenEqualsLen(t *testing.T) {
+	lockedLen := 3
+	unlockedLen := 3
+	length := lockedLen + unlockedLen
+	llru := buildPartiallyLocked(t, lockedLen, unlockedLen)
+
+	keysLen := len(llru.Keys())
+
+	if keysLen != length {
+		t.Errorf("expected `%v` but got %v", length, keysLen)
+	}
+}
+
+func TestKeysContainsAllAdded(t *testing.T) {
+		llru := buildNewEmpty(t, 4)
+
+	_, _ = llru.AddOrUpdateUnlocked("new key1", "1")
+	_, _ = llru.AddOrUpdateUnlocked("new key2", "2")
+	_, _ = llru.AddOrUpdateLocked("new key3", "3")
+	_, _ = llru.AddOrUpdateLocked("new key4", "4")
+
+	keys := llru.Keys()
+
+	contains1 := slices.Contains(keys, "new key1")
+	contains2 := slices.Contains(keys, "new key2")
+	contains3 := slices.Contains(keys, "new key3")
+	contains4 := slices.Contains(keys, "new key4")
+
+	if !contains1 || !contains2 || !contains3 || !contains4 {
+		t.Errorf("expected to contain keys but did not")
+	}
+}
+
+func TestKeysAreOrdered(t *testing.T) {
+	llru := buildNewEmpty(t, 4)
+
+	_, _ = llru.AddOrUpdateUnlocked("new key1", "1")
+	_, _ = llru.AddOrUpdateUnlocked("new key2", "2")
+	_, _ = llru.AddOrUpdateLocked("new key3", "3")
+	_, _ = llru.AddOrUpdateLocked("new key4", "4")
+
+	keys := llru.Keys()
+
+	isInCorrectPosition1 := keys[0] == "new key1"
+	isInCorrectPosition2 := keys[1] == "new key2"
+	isInCorrectPosition3 := keys[2] == "new key3"
+	isInCorrectPosition4 := keys[3] == "new key4"
+
+	if !isInCorrectPosition1 || !isInCorrectPosition2 || !isInCorrectPosition3 || !isInCorrectPosition4 {
+		t.Errorf("expected keys to be in correct order")
+	}
+}
+
 func TestValuesLenEqualsLen(t *testing.T) {
 	lockedLen := 3
 	unlockedLen := 3
