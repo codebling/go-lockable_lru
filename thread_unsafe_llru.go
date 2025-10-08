@@ -53,7 +53,7 @@ func NewUnsafeWithEvict[K comparable, V any](size int, onEvicted func(key K, val
 }
 
 //modifies the passed LRU to add or update the key/value pair. If a value was evicted, returns it.
-func addOrUpdate[K comparable, V any](lru *lru.Cache[K, V], key K, value V) (*Entry[K, V]) {
+func addOrUpdateUnderlyingUnlocked[K comparable, V any](lru *lru.Cache[K, V], key K, value V) (*Entry[K, V]) {
 	oldestKey, oldestValue, _ := lru.GetOldest() //we can ignore the last parameter, which is false if the lru is empty
 	wasEvicted := lru.Add(key, value)
 
@@ -65,7 +65,7 @@ func addOrUpdate[K comparable, V any](lru *lru.Cache[K, V], key K, value V) (*En
 }
 
 //modifies the passed LRU to change its size. If one item was evicted, it is returned. If more than one is evicted, the oldest is returned
-func resize[K comparable, V any](lru *lru.Cache[K, V], size int) (*Entry[K, V]) {
+func resizeUnderlyingUnlocked[K comparable, V any](lru *lru.Cache[K, V], size int) (*Entry[K, V]) {
 	oldestKey, oldestValue, _ := lru.GetOldest() //we can ignore the last parameter, which is false if the lru is empty
 	numberEvicted := lru.Resize(size)
 
@@ -77,7 +77,7 @@ func resize[K comparable, V any](lru *lru.Cache[K, V], size int) (*Entry[K, V]) 
 }
 
 //return array of values from oldest to newest
-func collectValues[K comparable, V any](gmap *gmap.OrderedMap[K,V]) []V {
+func collectValuesFromUnderlyingLocked[K comparable, V any](gmap *gmap.OrderedMap[K,V]) []V {
 	values := make([]V, gmap.Len())
 	i := 0
 	for pair := gmap.Oldest(); pair != nil; pair = pair.Next() {
@@ -88,7 +88,7 @@ func collectValues[K comparable, V any](gmap *gmap.OrderedMap[K,V]) []V {
 }
 
 //return array of values from oldest to newest
-func collectKeys[K comparable, V any](gmap *gmap.OrderedMap[K,V]) []K {
+func collectKeysFromUnderlyingLocked[K comparable, V any](gmap *gmap.OrderedMap[K,V]) []K {
 	values := make([]K, gmap.Len())
 	i := 0
 	for pair := gmap.Oldest(); pair != nil; pair = pair.Next() {
@@ -111,7 +111,7 @@ func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateUnlocked(key K, value V) (ok bool
 		//in case we did remove from the locked values, resize the locked so we don't unnecessarily evict
 		llru.unlocked.Resize(llru.size - llru.locked.Len())
 		
-		evicted = addOrUpdate(llru.unlocked, key, value)
+		evicted = addOrUpdateUnderlyingUnlocked(llru.unlocked, key, value)
 	}
 
 	ok = hasRoom
@@ -132,7 +132,7 @@ func (llru *ThreadunsafeLLRU[K, V]) AddOrUpdateLocked(key K, value V) (ok bool, 
 	if hasRoom {
 		llru.unlocked.Remove(key)
 		llru.locked.Set(key, value)
-		evicted = resize(llru.unlocked, llru.size - llru.locked.Len()) //recalculate size of unlocked in case we added a new value
+		evicted = resizeUnderlyingUnlocked(llru.unlocked, llru.size - llru.locked.Len()) //recalculate size of unlocked in case we added a new value
 	}
 
 	ok = hasRoom
@@ -153,7 +153,7 @@ func (llru *ThreadunsafeLLRU[K, V]) Lock(key K) (ok bool) {
 	llru.locked.Set(key, value)
 
 	//resize unlocked
-	resize(llru.unlocked, llru.size - llru.locked.Len())
+	resizeUnderlyingUnlocked(llru.unlocked, llru.size - llru.locked.Len())
 
 	return true
 }
@@ -171,7 +171,7 @@ func (llru *ThreadunsafeLLRU[K, V]) Unlock(key K) (ok bool) {
 	llru.locked.Delete(key)
 
 	//grow unlocked to prevent unnecessary eviction prior to adding the new value
-	resize(llru.unlocked, llru.size - llru.locked.Len())
+	resizeUnderlyingUnlocked(llru.unlocked, llru.size - llru.locked.Len())
 
 	llru.unlocked.Add(key, value)
 
@@ -215,7 +215,7 @@ func (llru *ThreadunsafeLLRU[K, V]) Len() int {
 // Returns an array of every value, starting with unlocked from oldest to newest, then locked
 func (llru *ThreadunsafeLLRU[K, V]) Keys() []K {
 	unlockedKeys := llru.unlocked.Keys()
-	lockedKeys := collectKeys(llru.locked)
+	lockedKeys := collectKeysFromUnderlyingLocked(llru.locked)
 
 	return append(unlockedKeys, lockedKeys...)
 }
@@ -223,7 +223,7 @@ func (llru *ThreadunsafeLLRU[K, V]) Keys() []K {
 // Returns an array of every value, starting with unlocked from oldest to newest, then locked
 func (llru *ThreadunsafeLLRU[K, V]) Values() []V {
 	unlockedValues := llru.unlocked.Values()
-	lockedValues := collectValues(llru.locked)
+	lockedValues := collectValuesFromUnderlyingLocked(llru.locked)
 
 	return append(unlockedValues, lockedValues...)
 }
