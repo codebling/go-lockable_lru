@@ -557,3 +557,45 @@ func TestRemoveOldest(t *testing.T) {
 		t.Errorf("expected `Entry{Key: \"new key1\", Value: \"1\"}` but got %v", oldest)
 	}
 }
+
+
+//If `newKey` does not exist, and there is at least one unlocked entry, replaces the key in the oldest entry with `newKey` and returns the oldest entry's value, the old key, and `true`
+func TestReplaceOldestKeyCase1(t *testing.T) {
+	llru := buildNewEmpty(t, 4)
+
+	_, _ = llru.AddOrUpdateUnlocked("old key1", "1")
+	_, _ = llru.AddOrUpdateUnlocked("old key2", "2")
+
+	value, oldKey, ok := llru.ReplaceOldestKey("new key1")
+
+	if !ok || *oldKey != "old key1" || *value != "1" {
+		t.Errorf("expected `\"1\", \"old key1\", true` but got %v, %v, %v", value, oldKey, ok)
+	}
+}
+
+//If `newKey` does not exist, and there are no unlocked entries, returns `nil, nil, false`
+func TestReplaceOldestKeyCase2(t *testing.T) {
+	llru := buildNewEmpty(t, 4)
+
+	_, _ = llru.AddOrUpdateLocked("old key1", "1")
+
+	value, oldKey, ok := llru.ReplaceOldestKey("new key1")
+
+	if ok || oldKey != nil || value != nil {
+		t.Errorf("expected `nil, nil, false` but got %v, %v, %v", value, oldKey, ok)
+	}
+}
+
+//If `newKey` exists, returns `nil, nil, false`
+func TestReplaceOldestKeyCase3(t *testing.T) {
+	llru := buildNewEmpty(t, 4)
+
+	_, _ = llru.AddOrUpdateLocked("new key1", "1")
+
+	value, oldKey, ok := llru.ReplaceOldestKey("new key1")
+
+	if ok || oldKey != nil || value != nil {
+		t.Errorf("expected `nil, nil, false` but got %v, %v, %v", value, oldKey, ok)
+	}
+}
+

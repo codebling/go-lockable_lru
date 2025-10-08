@@ -220,3 +220,21 @@ func (llru *ThreadunsafeLLRU[K, V]) RemoveOldest() *Entry[K, V] {
 	}
 	return nil
 }
+
+//If `newKey` does not exist, and there is at least one unlocked entry, replaces the key in the oldest entry with `newKey` and returns the oldest entry's value, the old key, and `true`
+//If `newKey` does not exist, and there are no unlocked entries, returns `nil, nil, false`
+//If `newKey` exists, returns `nil, nil, false`
+func (llru *ThreadunsafeLLRU[K, V]) ReplaceOldestKey(newKey K) (value *V, oldKey *K, ok bool) {
+	contains := llru.Contains(newKey)
+	
+	if !contains { //error if key exists
+		oldestKey, oldestValue, ok := llru.unlocked.RemoveOldest()
+
+		if ok {
+			ok, _ = llru.AddOrUpdateUnlocked(newKey, oldestValue)
+			return &oldestValue, &oldestKey, ok
+		}
+	}
+
+	return nil, nil, false
+}

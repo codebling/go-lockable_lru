@@ -99,3 +99,9 @@ func (llru *LLRU[K, V]) RemoveOldest() *Entry[K, V] {
 	defer llru.lock.Unlock()
 	return llru.tullru.RemoveOldest()
 }
+
+func (llru *LLRU[K, V]) ReplaceOldestKey(newKey K) (value *V, oldKey *K, ok bool) {
+	llru.lock.Lock()
+	defer llru.lock.Unlock()
+	return llru.tullru.ReplaceOldestKey(newKey)
+}
